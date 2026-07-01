@@ -58,18 +58,26 @@ run.bat
 the app. First run will take a minute while packages install.
 
 Check what you've already got with `ollama list`, and set `ollama.model` in
-`config.yaml` to match (default is `glm-4.7-flash:latest`). You'll also need
-the small embedding model that powers long-term memory, which none of the
-usual coder models cover:
+`config.yaml` to match (default is `qwen2.5-coder:7b`). You'll also need the
+small embedding model that powers long-term memory, which none of the usual
+coder models cover:
 
 ```bat
 ollama pull nomic-embed-text
 ```
 
-Your 7900XT has 20GB of VRAM, so you have room to size up if you want a
-bigger general-purpose model — `qwen2.5:14b` or `qwen2.5:32b-instruct-q4_K_M`
-are good picks. `codestral` and `qwen2.5-coder` are strong choices too if you
-mainly want Jarvis for coding help.
+**Watch VRAM headroom, not just model size.** Your 7900XT has 20GB, but a
+model needs room beyond its own file size for context/KV-cache — a ~19GB
+model file leaves almost nothing free and will max out VRAM instantly.
+Rough guide for this card:
+
+| Model size (file) | Headroom left | Notes                              |
+|--------------------|----------------|--------------------------------------|
+| ~5GB (`qwen2.5-coder:7b`) | Plenty | Safe default, room for long context |
+| ~12GB (`codestral`)       | Comfortable | Stronger, still safe |
+| ~19GB+ (`glm-4.7-flash`)  | Almost none | Maxes out instantly, avoid |
+
+Run `ollama ps` while chatting to see actual VRAM usage if you're unsure.
 
 ## Getting updates later
 

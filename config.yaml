@@ -4,10 +4,13 @@
 ollama:
   host: "http://localhost:11434"
   # Set to whatever you have pulled -- check with `ollama list`.
-  # Using glm-4.7-flash here since it's the strongest general-purpose
-  # conversational model already on this machine (the others -- codestral,
-  # qwen2.5-coder -- are code-specialist models). Swap freely.
-  model: "glm-4.7-flash:latest"
+  # glm-4.7-flash is a 19GB model file on a 20GB card -- it leaves almost no
+  # VRAM headroom for context/KV-cache, which is why it maxes out instantly.
+  # qwen2.5-coder:7b (4.7GB) leaves plenty of room alongside the embedding
+  # model. Swap to codestral (12GB) if you want more capability and can
+  # live with less headroom, or a smaller general-chat pull if you don't
+  # want coder-flavored answers.
+  model: "qwen2.5-coder:7b"
   system_prompt: >
     You are J.A.R.V.I.S., Tony Stark's AI assistant. You are witty, extremely
     competent, concise, and unflappable. Address the user as "sir" or "boss"
