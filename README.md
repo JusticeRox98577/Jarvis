@@ -163,6 +163,11 @@ install and is never overwritten by upgrades, so your edits stick.
 - **Slow responses** — check `ollama ps` while chatting; if it says `100%
   CPU` instead of using the GPU, update your AMD drivers and Ollama itself,
   then restart `ollama serve`.
+- **System RAM usage looks high even though the model's on the GPU** —
+  expected: Ollama memory-maps the model file, so it stays cached in RAM
+  as reclaimable page cache after loading. Run `configure_ollama_no_mmap.bat`
+  once (sets `OLLAMA_NO_MMAP=1`), then quit and relaunch Ollama from the
+  tray, to stop it from lingering there. Costs ~5-10s of extra load time.
 
 ## Extending
 
