@@ -117,15 +117,31 @@ Edit `config.yaml`:
 - Everything else goes to your local model.
 - Chat history is saved to `data/history.json` and reloaded next launch.
 
-## Building a standalone .exe
+## Building a real installed Windows app
+
+Two steps turn this from "a Python script you run via `run.bat`" into an
+actual installed app with a Start Menu entry, desktop icon, taskbar icon,
+and an uninstaller in Add/Remove Programs:
 
 ```bat
 build_exe.bat
+build_installer.bat
 ```
 
-Produces `dist\JARVIS\JARVIS.exe` — a double-clickable app, no terminal
-window, no need for a Python install on the target machine (Ollama is still
-required separately).
+- `build_exe.bat` produces `dist\JARVIS\JARVIS.exe` — no terminal window, no
+  Python install needed on the target machine (Ollama is still required
+  separately).
+- `build_installer.bat` packages that into `installer_output\JARVIS-Setup.exe`
+  using [Inno Setup](https://jrsoftware.org/isdl.php) — install it once
+  (default install adds `ISCC.exe` to PATH). Run the generated
+  `JARVIS-Setup.exe` and it installs to Program Files, adds Start
+  Menu/desktop shortcuts, and registers a normal uninstaller.
+
+Your chat history, memory, and personality settings live in
+`%APPDATA%\JARVIS` once installed this way (not in Program Files), so
+upgrading or reinstalling never touches them, and the uninstaller leaves
+them in place. `config.yaml` gets copied to the install folder on first
+install and is never overwritten by upgrades, so your edits stick.
 
 ## Troubleshooting
 

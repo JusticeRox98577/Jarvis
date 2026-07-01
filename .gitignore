@@ -4,6 +4,7 @@ __pycache__/
 data/*.json
 build/
 dist/
+installer_output/
 *.spec
 .idea/
 .vscode/

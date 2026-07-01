@@ -1,8 +1,20 @@
+import os
+import sys
 from pathlib import Path
 
 import yaml
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+def _project_root() -> Path:
+    """Where config.yaml / assets live. When running from source this is
+    the repo root; when packaged with PyInstaller it's the folder holding
+    JARVIS.exe (build_exe.bat copies config.yaml and assets/ there)."""
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parent.parent
+
+
+PROJECT_ROOT = _project_root()
 DEFAULT_CONFIG_PATH = PROJECT_ROOT / "config.yaml"
 
 
@@ -27,8 +39,21 @@ def load_config(path: Path = DEFAULT_CONFIG_PATH) -> AttrDict:
 
 
 def resolve_data_dir(cfg: AttrDict) -> Path:
-    data_dir = Path(cfg.app.data_dir)
-    if not data_dir.is_absolute():
-        data_dir = PROJECT_ROOT / data_dir
+    """Where history/memory/personality get written. Installed (frozen)
+    builds default to %APPDATA%\\JARVIS so data survives reinstalls/updates
+    and doesn't require write access to Program Files. Running from source
+    keeps using a project-local folder, unchanged from before."""
+    configured = Path(cfg.app.data_dir)
+    if configured.is_absolute():
+        data_dir = configured
+    elif getattr(sys, "frozen", False):
+        appdata = os.getenv("APPDATA") or str(PROJECT_ROOT)
+        data_dir = Path(appdata) / "JARVIS" / configured.name
+    else:
+        data_dir = PROJECT_ROOT / configured
     data_dir.mkdir(parents=True, exist_ok=True)
     return data_dir
+
+
+def resolve_asset(name: str) -> Path:
+    return PROJECT_ROOT / "assets" / name
