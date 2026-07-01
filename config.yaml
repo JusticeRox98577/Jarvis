@@ -1,0 +1,27 @@
+# J.A.R.V.I.S. configuration
+# Edit this file, then restart the app for changes to take effect.
+
+ollama:
+  host: "http://localhost:11434"
+  # Pick something that fits your 7900XT's 20GB VRAM comfortably.
+  # Good defaults: "llama3.1:8b" (fast) or "qwen2.5:14b" (smarter, still fast).
+  model: "llama3.1:8b"
+  system_prompt: >
+    You are J.A.R.V.I.S., Tony Stark's AI assistant. You are witty, extremely
+    competent, concise, and unflappable. Address the user as "sir" or "boss"
+    occasionally, but do not overdo it. Prefer short, direct answers unless
+    the user asks for detail. You have a dry sense of humor.
+  temperature: 0.7
+
+voice:
+  enabled: true
+  stt_model: "base"      # tiny | base | small | medium (bigger = more accurate, slower)
+  stt_device: "cpu"      # your 7900X handles "base"/"small" easily
+  tts_enabled: true
+  tts_rate: 178
+  tts_voice_hint: "male" # tries to auto-pick a deeper Windows SAPI5 voice
+
+app:
+  name: "J.A.R.V.I.S."
+  data_dir: "data"
+  max_history_turns: 20
