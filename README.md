@@ -101,6 +101,7 @@ Edit `config.yaml`:
 | `ollama.host`               | Ollama server URL (default `http://localhost:11434`)                 |
 | `ollama.model`               | Which local model to use                                              |
 | `ollama.system_prompt`       | Jarvis's personality                                                  |
+| `ollama.keep_alive`          | How long the model stays loaded after your last message before auto-unloading (default `5m`) |
 | `voice.enabled`              | Master on/off switch for the mic button                              |
 | `voice.stt_model`            | Whisper size: `tiny`/`base`/`small`/`medium`                          |
 | `voice.tts_enabled`          | Whether Jarvis speaks replies aloud                                    |
@@ -163,11 +164,22 @@ install and is never overwritten by upgrades, so your edits stick.
 - **Slow responses** — check `ollama ps` while chatting; if it says `100%
   CPU` instead of using the GPU, update your AMD drivers and Ollama itself,
   then restart `ollama serve`.
-- **System RAM usage looks high even though the model's on the GPU** —
-  expected: Ollama memory-maps the model file, so it stays cached in RAM
-  as reclaimable page cache after loading. Run `configure_ollama_no_mmap.bat`
-  once (sets `OLLAMA_NO_MMAP=1`), then quit and relaunch Ollama from the
-  tray, to stop it from lingering there. Costs ~5-10s of extra load time.
+- **System RAM/VRAM stays high while you're actively chatting** — expected;
+  Ollama keeps the model warm so replies stay fast. It unloads on its own
+  once you've been idle for `ollama.keep_alive` (5 minutes by default,
+  configurable in `config.yaml`) — Jarvis sets this on every request itself,
+  so it works regardless of any Windows environment variables. To force an
+  immediate unload: `ollama stop huihui_ai/mistral-small-abliterated:24b`
+  (swap in whatever model you're running).
+- **Model file still shows up in RAM while actively loaded, even though
+  it's running on the GPU** — Ollama memory-maps the model file during
+  load, so the OS caches it in RAM as reclaimable page cache. This is
+  normal and doesn't count against `keep_alive`/unloading; it clears once
+  the model unloads. If you want to try disabling it anyway, there's
+  `configure_ollama_no_mmap.bat` (sets `OLLAMA_NO_MMAP=1`) — but on at
+  least one Windows/ROCm setup this traded reclaimable cache for
+  *committed* memory sitting near the system limit, which is arguably
+  worse, so it's opt-in rather than the default recommendation.
 
 ## Extending
 

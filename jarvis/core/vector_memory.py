@@ -13,10 +13,11 @@ class VectorMemory:
     conversation history. This only ever stores things said in chat, or
     explicitly given via a "remember that ..." command -- nothing else."""
 
-    def __init__(self, data_dir: Path, host: str, embed_model: str = "nomic-embed-text", top_k: int = 4):
+    def __init__(self, data_dir: Path, host: str, embed_model: str = "nomic-embed-text", top_k: int = 4, keep_alive: str = "5m"):
         self.client = ollama.Client(host=host)
         self.embed_model = embed_model
         self.top_k = top_k
+        self.keep_alive = keep_alive
         self.file = Path(data_dir) / "vector_memory.json"
         self.entries = self._load()
 
@@ -32,7 +33,7 @@ class VectorMemory:
         self.file.write_text(json.dumps(self.entries, ensure_ascii=False), encoding="utf-8")
 
     def _embed(self, text: str):
-        response = self.client.embed(model=self.embed_model, input=text)
+        response = self.client.embed(model=self.embed_model, input=text, keep_alive=self.keep_alive)
         vectors = response.embeddings
         return list(vectors[0]) if vectors else None
 

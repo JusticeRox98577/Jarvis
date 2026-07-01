@@ -4,11 +4,12 @@ import ollama
 class OllamaBrain:
     """Thin wrapper around a local Ollama server."""
 
-    def __init__(self, host: str, model: str, system_prompt: str, temperature: float = 0.7):
+    def __init__(self, host: str, model: str, system_prompt: str, temperature: float = 0.7, keep_alive: str = "5m"):
         self.client = ollama.Client(host=host)
         self.model = model
         self.system_prompt = system_prompt
         self.temperature = temperature
+        self.keep_alive = keep_alive
 
     def check_connection(self) -> bool:
         try:
@@ -30,6 +31,7 @@ class OllamaBrain:
             messages=full_messages,
             stream=True,
             options={"temperature": self.temperature},
+            keep_alive=self.keep_alive,
         )
         for chunk in stream:
             content = chunk.get("message", {}).get("content", "")

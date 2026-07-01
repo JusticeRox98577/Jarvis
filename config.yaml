@@ -18,6 +18,14 @@ ollama:
     occasionally, but do not overdo it. Prefer short, direct answers unless
     the user asks for detail. You have a dry sense of humor.
   temperature: 0.7
+  # How long Ollama keeps this model loaded in VRAM/RAM after your last
+  # message before unloading it automatically. Every request refreshes
+  # this timer, so it never interrupts an active conversation -- it only
+  # matters once you've actually stopped using Jarvis. Shorter = frees
+  # memory sooner when idle; longer = fewer reload delays if you come
+  # back quickly. This is set by the app itself on every request, so it
+  # works regardless of any OLLAMA_KEEP_ALIVE Windows environment variable.
+  keep_alive: "5m"
 
 voice:
   enabled: true

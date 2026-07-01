@@ -52,12 +52,17 @@ class MainWindow(QWidget):
             model=cfg.ollama.model,
             system_prompt=cfg.ollama.system_prompt,
             temperature=cfg.ollama.temperature,
+            keep_alive=cfg.ollama.keep_alive,
         )
 
         self.vector_memory = None
         if cfg.memory.enabled:
             self.vector_memory = VectorMemory(
-                data_dir, host=cfg.ollama.host, embed_model=cfg.memory.embed_model, top_k=cfg.memory.top_k
+                data_dir,
+                host=cfg.ollama.host,
+                embed_model=cfg.memory.embed_model,
+                top_k=cfg.memory.top_k,
+                keep_alive=cfg.ollama.keep_alive,
             )
 
         self.personality = Personality(
