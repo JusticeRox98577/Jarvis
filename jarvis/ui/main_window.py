@@ -14,10 +14,13 @@ from PySide6.QtWidgets import (
 )
 
 from jarvis.config import resolve_data_dir
+from jarvis.core import awareness
 from jarvis.core.llm import OllamaBrain
 from jarvis.core.memory import Memory
+from jarvis.core.personality import Personality
 from jarvis.core.system_stats import get_stats
-from jarvis.core.tools import try_handle
+from jarvis.core.tools import extract_remember_fact, try_handle
+from jarvis.core.vector_memory import VectorMemory
 from jarvis.ui.hud_widgets import ArcReactorWidget, GaugeRing, HudBackground
 from jarvis.ui.theme import CYAN, CYAN_DIM, CYAN_GLOW, GREEN, STYLESHEET
 from jarvis.workers import ChatWorker, ListenWorker, SpeakWorker
@@ -51,6 +54,25 @@ class MainWindow(QWidget):
             temperature=cfg.ollama.temperature,
         )
 
+        self.vector_memory = None
+        if cfg.memory.enabled:
+            self.vector_memory = VectorMemory(
+                data_dir, host=cfg.ollama.host, embed_model=cfg.memory.embed_model, top_k=cfg.memory.top_k
+            )
+
+        self.personality = Personality(
+            data_dir,
+            initial={
+                "verbosity": cfg.personality.verbosity,
+                "formality": cfg.personality.formality,
+                "humor": cfg.personality.humor,
+            },
+        )
+
+        self.current_window_title = None
+        self.awareness_timer = QTimer(self)
+        self.awareness_timer.timeout.connect(self._poll_awareness)
+
         self.stt = None
         self.tts = None
         self.voice_enabled = bool(cfg.voice.enabled)
@@ -61,6 +83,7 @@ class MainWindow(QWidget):
 
         self._build_ui()
         self._init_voice()
+        self._init_awareness()
         QTimer.singleShot(300, self._run_boot_sequence)
 
         self.clock_timer = QTimer(self)
@@ -88,11 +111,15 @@ class MainWindow(QWidget):
         top = QHBoxLayout()
         title = QLabel(self.cfg.app.name)
         title.setObjectName("title")
+        self.awareness_label = QLabel("")
+        self.awareness_label.setObjectName("panelHeader")
         self.clock_label = QLabel("")
         self.clock_label.setObjectName("clock")
         self.clock_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         top.addWidget(title)
         top.addStretch(1)
+        top.addWidget(self.awareness_label)
+        top.addSpacing(16)
         top.addWidget(self.clock_label)
         outer.addLayout(top)
 
@@ -144,6 +171,14 @@ class MainWindow(QWidget):
         self.mic_button.clicked.connect(self._on_mic_toggled)
         bottom.addWidget(self.mic_button)
 
+        self.aware_button = QPushButton("AWARE")
+        self.aware_button.setCheckable(True)
+        self.aware_button.setToolTip(
+            "Opt-in: shares only your active window's title for context. Never keystrokes/screen/clipboard. Nothing is logged to disk."
+        )
+        self.aware_button.clicked.connect(self._on_aware_toggled)
+        bottom.addWidget(self.aware_button)
+
         self.send_button = QPushButton("SEND")
         self.send_button.clicked.connect(self._on_send_clicked)
         bottom.addWidget(self.send_button)
@@ -182,6 +217,34 @@ class MainWindow(QWidget):
             self.mic_button.setToolTip(f"Voice init failed: {exc}")
             self.stt = None
             self.tts = None
+
+    # ----------------------------------------------------------- awareness
+
+    def _init_awareness(self):
+        if not self.cfg.awareness.enabled:
+            self.aware_button.setEnabled(False)
+            self.aware_button.setToolTip("Disabled in config.yaml (awareness.enabled: false)")
+        elif not awareness.is_available():
+            self.aware_button.setEnabled(False)
+            self.aware_button.setToolTip("Requires pywin32 (pip install pywin32) -- Windows only")
+
+    def _on_aware_toggled(self, checked: bool):
+        if checked:
+            self.awareness_timer.start(self.cfg.awareness.poll_seconds * 1000)
+            self._poll_awareness()
+            self._append_system_line(
+                "Window awareness ON — sharing only the active window title, nothing else, nothing stored.", GREEN
+            )
+        else:
+            self.awareness_timer.stop()
+            self.current_window_title = None
+            self.awareness_label.setText("")
+            self._append_system_line("Window awareness OFF.", CYAN_DIM)
+
+    def _poll_awareness(self):
+        title = awareness.get_active_window(self.cfg.awareness.blocklist)
+        self.current_window_title = title
+        self.awareness_label.setText(f"CTX: {title}" if title else "CTX: (blocked/none)")
 
     # ------------------------------------------------------------- boot
 
@@ -252,6 +315,20 @@ class MainWindow(QWidget):
         self._append_user_message(text)
         self.memory.add("user", text)
 
+        if self.cfg.personality.adapt:
+            self.personality.observe(text)
+
+        fact = extract_remember_fact(text)
+        if fact:
+            if self.vector_memory:
+                self.vector_memory.remember(fact, kind="fact")
+            reply = f"Noted, sir. I'll remember that {fact}."
+            self.memory.add("assistant", reply)
+            self._start_assistant_line()
+            self._append_assistant_token(reply)
+            self._speak(reply)
+            return
+
         tool_reply = try_handle(text)
         if tool_reply is not None:
             self.memory.add("assistant", tool_reply)
@@ -265,11 +342,39 @@ class MainWindow(QWidget):
         self.send_button.setEnabled(False)
         self._start_assistant_line()
 
-        self._chat_worker = ChatWorker(self.brain, self.memory.context())
+        context_fn = self._build_context_fn(text)
+        on_complete = (lambda full: self._remember_exchange(text, full)) if self.vector_memory else None
+
+        self._chat_worker = ChatWorker(
+            self.brain, self.memory.context(), context_fn=context_fn, on_complete=on_complete
+        )
         self._chat_worker.token.connect(self._append_assistant_token)
         self._chat_worker.finished_text.connect(self._on_chat_finished)
         self._chat_worker.error.connect(self._on_chat_error)
         self._chat_worker.start()
+
+    def _build_context_fn(self, user_text: str):
+        """Runs on the worker thread (may hit the network for embeddings),
+        never on the UI thread."""
+
+        def _fn():
+            parts = []
+            if self.cfg.personality.adapt:
+                parts.append(self.personality.prompt_fragment())
+            if self.vector_memory:
+                recalled = self.vector_memory.recall(user_text)
+                if recalled:
+                    joined = "\n".join(f"- {r}" for r in recalled)
+                    parts.append(f"Relevant memory from past conversations:\n{joined}")
+            if self.aware_button.isChecked() and self.current_window_title:
+                parts.append(f"The user's currently active window is: {self.current_window_title}")
+            return "\n\n".join(parts)
+
+        return _fn
+
+    def _remember_exchange(self, user_text: str, assistant_text: str):
+        if self.vector_memory:
+            self.vector_memory.remember(f"User asked: {user_text}\nJarvis replied: {assistant_text}")
 
     def _on_chat_finished(self, full_text: str):
         self.memory.add("assistant", full_text)

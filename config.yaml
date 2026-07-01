@@ -21,6 +21,46 @@ voice:
   tts_rate: 178
   tts_voice_hint: "male" # tries to auto-pick a deeper Windows SAPI5 voice
 
+memory:
+  # Long-term recall across sessions: past exchanges and anything you tell
+  # Jarvis to remember get embedded locally and retrieved when relevant.
+  # Only stores what's said IN CHAT -- never anything from outside the app.
+  enabled: true
+  embed_model: "nomic-embed-text" # run: ollama pull nomic-embed-text
+  top_k: 4
+
+personality:
+  # Jarvis nudges its tone based on explicit feedback you give it in chat
+  # (e.g. "be more concise", "loosen up", "be more formal"). Values are
+  # 0.0-1.0 and persist in data/personality.json between runs.
+  adapt: true
+  verbosity: 0.5   # 0 = terse, 1 = thorough
+  formality: 0.4   # 0 = casual, 1 = formal
+  humor: 0.4       # 0 = serious, 1 = playful
+
+awareness:
+  # OFF by default, and double-gated: this flag AND the in-app "AWARE"
+  # button must both be on. When active, Jarvis only ever reads the TITLE
+  # of your current foreground window (e.g. "Notepad - todo.txt") for
+  # conversational context -- never keystrokes, never screen content,
+  # never clipboard. Nothing here is written to disk; only the single
+  # most recent title is held in memory for the running session.
+  # Anything matching the blocklist below is skipped entirely.
+  enabled: false
+  poll_seconds: 5
+  blocklist:
+    - "keepass"
+    - "bitwarden"
+    - "1password"
+    - "lastpass"
+    - "dashlane"
+    - "bank"
+    - "chase"
+    - "paypal"
+    - "venmo"
+    - "incognito"
+    - "private browsing"
+
 app:
   name: "J.A.R.V.I.S."
   data_dir: "data"

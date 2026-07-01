@@ -9,3 +9,6 @@ faster-whisper>=1.0.0
 sounddevice>=0.4.6
 numpy>=1.26
 pyttsx3>=2.90
+
+# Windows-only: powers the opt-in active-window-title awareness feature.
+pywin32>=306; platform_system=="Windows"

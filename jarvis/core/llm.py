@@ -17,9 +17,14 @@ class OllamaBrain:
         except Exception:
             return False
 
-    def stream_chat(self, messages):
-        """Yield response text chunks for the given conversation history."""
-        full_messages = [{"role": "system", "content": self.system_prompt}] + list(messages)
+    def stream_chat(self, messages, extra_context: str = ""):
+        """Yield response text chunks for the given conversation history.
+        extra_context (personality calibration, recalled memory, current
+        window title) is folded into the system message for this turn only."""
+        system_content = self.system_prompt
+        if extra_context:
+            system_content = f"{self.system_prompt}\n\n{extra_context}"
+        full_messages = [{"role": "system", "content": system_content}] + list(messages)
         stream = self.client.chat(
             model=self.model,
             messages=full_messages,

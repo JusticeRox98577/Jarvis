@@ -8,6 +8,21 @@ import datetime
 import subprocess
 import webbrowser
 
+_REMEMBER_PREFIXES = ("remember that ", "remember this: ", "remember this, ", "note that ", "remember: ")
+
+
+def extract_remember_fact(text: str):
+    """If the user asked Jarvis to remember something explicitly, return
+    just the fact. Otherwise None."""
+    t = text.strip()
+    tl = t.lower()
+    for prefix in _REMEMBER_PREFIXES:
+        if tl.startswith(prefix):
+            fact = t[len(prefix):].strip()
+            return fact or None
+    return None
+
+
 _APP_MAP = {
     "notepad": "notepad.exe",
     "calculator": "calc.exe",

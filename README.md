@@ -9,7 +9,29 @@ cloud, no API keys, no data leaving your PC.
 - Local LLM brain via Ollama, streamed token-by-token
 - Push-to-talk voice input (local Whisper) and offline text-to-speech reply
 - A few built-in commands (time, date, open an app, web search) that don't need the LLM
+- Long-term memory: recalls relevant past conversations and anything you ask it to remember
+- Adaptive personality: tone (verbosity/formality/humor) drifts based on your explicit feedback
 - Conversation memory persisted across sessions
+
+## Privacy design
+
+Jarvis does **not** monitor your PC, log keystrokes, capture your screen, or
+read your clipboard/browsing history — none of that is in this app, on
+purpose. What it does do:
+
+- **Chat memory**: everything you say to it, or explicitly ask it to
+  remember, is embedded locally (via Ollama) and stored in
+  `data/vector_memory.json` so it can recall relevant context later. Delete
+  that file any time to wipe it.
+- **Window awareness (off by default)**: if you turn on the **AWARE** button
+  (gated by `awareness.enabled: true` in config *and* the button itself),
+  Jarvis reads only the *title* of your current foreground window for
+  conversational context — e.g. knowing you're in a code editor vs. a game.
+  It never reads window contents, keystrokes, or the clipboard, skips
+  anything matching `awareness.blocklist` (password managers, banking,
+  incognito, etc. by default), and never writes window titles to disk —
+  only the single most recent title is held in memory and gone when you
+  close the app.
 
 Built for a Windows PC with an AMD Ryzen 9 7900X + Radeon RX 7900XT, but the
 app itself is plain Python/Qt and will run wherever Python does.
@@ -35,10 +57,12 @@ run.bat
 `run.bat` creates a virtual environment, installs dependencies, and launches
 the app. First run will take a minute while packages install.
 
-Pull a model for Ollama if you haven't already (in a separate terminal):
+Pull a model for Ollama if you haven't already (in a separate terminal), plus
+the small embedding model that powers long-term memory:
 
 ```bat
 ollama pull llama3.1:8b
+ollama pull nomic-embed-text
 ```
 
 Your 7900XT has 20GB of VRAM, so you have room to size up. Rough guide:
@@ -76,6 +100,12 @@ Edit `config.yaml`:
 | `voice.stt_model`            | Whisper size: `tiny`/`base`/`small`/`medium`                          |
 | `voice.tts_enabled`          | Whether Jarvis speaks replies aloud                                    |
 | `voice.tts_rate`             | Speech rate                                                            |
+| `memory.enabled`             | Turns long-term recall on/off                                          |
+| `memory.embed_model`         | Ollama embedding model used for memory (`nomic-embed-text`)            |
+| `personality.adapt`          | Whether tone adjusts based on your feedback                            |
+| `personality.verbosity/formality/humor` | Starting tone values (0.0-1.0); they drift from there over time |
+| `awareness.enabled`          | Master switch for the AWARE button (still requires toggling it in-app) |
+| `awareness.blocklist`        | Apps/window titles that are never shared, even when AWARE is on        |
 | `app.max_history_turns`      | How much conversation context is sent to the model each turn          |
 
 ## Using it
@@ -84,7 +114,10 @@ Edit `config.yaml`:
   to send what you said.
 - Built-in commands that skip the LLM entirely: "what time is it", "what's
   the date", "open notepad" (or calculator/explorer/chrome/etc.), "search for
-  ...".
+  ...", "remember that ..." (saves a fact to long-term memory).
+- Give style feedback any time — "be more concise", "loosen up", "be more
+  formal", "be funnier" — and Jarvis's tone shifts accordingly and stays that
+  way.
 - Everything else goes to your local model.
 - Chat history is saved to `data/history.json` and reloaded next launch.
 
