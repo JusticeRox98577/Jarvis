@@ -58,9 +58,9 @@ run.bat
 the app. First run will take a minute while packages install.
 
 Check what you've already got with `ollama list`, and set `ollama.model` in
-`config.yaml` to match (default is `qwen2.5-coder:7b`). You'll also need the
-small embedding model that powers long-term memory, which none of the usual
-coder models cover:
+`config.yaml` to match (default is `huihui_ai/mistral-small-abliterated:24b`
+— pull it with `ollama pull huihui_ai/mistral-small-abliterated:24b`). You'll
+also need the small embedding model that powers long-term memory:
 
 ```bat
 ollama pull nomic-embed-text
@@ -73,9 +73,10 @@ Rough guide for this card:
 
 | Model size (file) | Headroom left | Notes                              |
 |--------------------|----------------|--------------------------------------|
-| ~5GB (`qwen2.5-coder:7b`) | Plenty | Safe default, room for long context |
-| ~12GB (`codestral`)       | Comfortable | Stronger, still safe |
-| ~19GB+ (`glm-4.7-flash`)  | Almost none | Maxes out instantly, avoid |
+| ~5GB (`qwen2.5-coder:7b`) | Plenty | Safe, coding-focused |
+| ~12GB (`codestral`)       | Comfortable | Stronger, still safe, coding-focused |
+| ~14GB (`huihui_ai/mistral-small-abliterated:24b`) | ~6GB free | Default: large, uncensored, general-purpose |
+| ~19GB+ (`glm-4.7-flash`, `qwen3-abliterated:30b-a3b`) | Almost none | Maxes out instantly, avoid |
 
 Run `ollama ps` while chatting to see actual VRAM usage if you're unsure.
 
