@@ -57,24 +57,19 @@ run.bat
 `run.bat` creates a virtual environment, installs dependencies, and launches
 the app. First run will take a minute while packages install.
 
-Pull a model for Ollama if you haven't already (in a separate terminal), plus
-the small embedding model that powers long-term memory:
+Check what you've already got with `ollama list`, and set `ollama.model` in
+`config.yaml` to match (default is `glm-4.7-flash:latest`). You'll also need
+the small embedding model that powers long-term memory, which none of the
+usual coder models cover:
 
 ```bat
-ollama pull llama3.1:8b
 ollama pull nomic-embed-text
 ```
 
-Your 7900XT has 20GB of VRAM, so you have room to size up. Rough guide:
-
-| Model                          | Feel                          |
-|---------------------------------|--------------------------------|
-| `llama3.1:8b`                   | Fast, snappy, default          |
-| `qwen2.5:14b`                   | Noticeably smarter, still fast |
-| `qwen2.5:32b-instruct-q4_K_M`   | Best quality, slower per token |
-
-Set whichever you like in `config.yaml` under `ollama.model`, then re-run
-`run.bat`.
+Your 7900XT has 20GB of VRAM, so you have room to size up if you want a
+bigger general-purpose model — `qwen2.5:14b` or `qwen2.5:32b-instruct-q4_K_M`
+are good picks. `codestral` and `qwen2.5-coder` are strong choices too if you
+mainly want Jarvis for coding help.
 
 ## Getting updates later
 

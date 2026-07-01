@@ -3,9 +3,11 @@
 
 ollama:
   host: "http://localhost:11434"
-  # Pick something that fits your 7900XT's 20GB VRAM comfortably.
-  # Good defaults: "llama3.1:8b" (fast) or "qwen2.5:14b" (smarter, still fast).
-  model: "llama3.1:8b"
+  # Set to whatever you have pulled -- check with `ollama list`.
+  # Using glm-4.7-flash here since it's the strongest general-purpose
+  # conversational model already on this machine (the others -- codestral,
+  # qwen2.5-coder -- are code-specialist models). Swap freely.
+  model: "glm-4.7-flash:latest"
   system_prompt: >
     You are J.A.R.V.I.S., Tony Stark's AI assistant. You are witty, extremely
     competent, concise, and unflappable. Address the user as "sir" or "boss"
