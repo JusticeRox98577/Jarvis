@@ -73,11 +73,12 @@ mainly want Jarvis for coding help.
 
 ## Getting updates later
 
-Whenever there's a new version of this app, pull it before running again:
+`run.bat` auto-pulls the latest `main` before every launch, so just running
+it again gets you up to date — no manual `git pull` needed. If you ever want
+to pull without changing directories first, use `git -C`:
 
 ```bat
-git pull origin main
-run.bat
+git -C C:\path\to\Jarvis pull origin main
 ```
 
 (`run.bat` re-installs any new dependencies automatically.)

@@ -2,6 +2,12 @@
 setlocal
 cd /d "%~dp0"
 
+git rev-parse --is-inside-work-tree >nul 2>&1
+if not errorlevel 1 (
+    echo [SETUP] Checking for updates...
+    git pull origin main
+)
+
 if not exist venv (
     echo [SETUP] Creating virtual environment...
     py -3 -m venv venv
